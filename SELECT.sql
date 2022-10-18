@@ -25,41 +25,41 @@ WHERE song_name LIKE '%My%' OR song_name LIKE '%Моя%';
 
 
 --Part2
---количество исполнителей в каждом жанре;
+--1) количество исполнителей в каждом жанре;
 SELECT genre.name, COUNT(artist.nickname)  FROM genretoartist 
 JOIN artist ON artist.artist_id = genretoartist.artist_id
 JOIN genre ON genre.genre_id = genretoartist.artist_id
 GROUP BY genre.name;
 
---количество треков, вошедших в альбомы 2019-2020 годов;
+--2) количество треков, вошедших в альбомы 2019-2020 годов;
 SELECT album.release_year, COUNT(tracklist.song_name)  FROM tracklist 
 JOIN album ON album.album_id = tracklist.album_id 
 WHERE release_year >= 2019 AND release_year <= 2020
 GROUP BY release_year;
 
---средняя продолжительность треков по каждому альбому;
+--3) средняя продолжительность треков по каждому альбому;
 SELECT album.title, AVG(tracklist.length)  FROM tracklist 
 JOIN album ON album.album_id = tracklist.album_id 
 GROUP BY album.title;
 
---все исполнители, которые не выпустили альбомы в 2020 году;
+--4) все исполнители, которые не выпустили альбомы в 2020 году;
 SELECT artist.nickname FROM artist 
-JOIN artisttoalbum ON artist.artist_id = artisttoalbum.artist_id 
-JOIN album ON album.album_id = artisttoalbum.album_id 
-WHERE release_year != 2020
-GROUP BY artist.nickname;
+WHERE artist.nickname NOT IN (SELECT artist.nickname FROM artist
+							JOIN artisttoalbum ON artist.artist_id = artisttoalbum.artist_id 
+							JOIN album ON album.album_id = artisttoalbum.album_id 
+							WHERE release_year = 2020);
 
---названия сборников, в которых присутствует конкретный исполнитель (выберите сами);
-SELECT compilation.name FROM compilation
+
+--5) названия сборников, в которых присутствует конкретный исполнитель (выберите сами);
+SELECT DISTINCT compilation.name FROM compilation
 JOIN compilationtotracklist ON compilation.compilation_id = compilationtotracklist.compilation_id
 JOIN tracklist ON tracklist.tracklist_id = compilationtotracklist.tracklist_id
 JOIN album ON album.album_id = tracklist.album_id 
 JOIN artisttoalbum ON album.album_id = artisttoalbum.album_id 
 JOIN artist ON artist.artist_id = artisttoalbum.artist_id 
-WHERE artist.nickname LIKE '%Queen%'
-GROUP BY compilation.name;
+WHERE artist.nickname LIKE '%Queen%';
 
---название альбомов, в которых присутствуют исполнители более 1 жанра;
+--6) название альбомов, в которых присутствуют исполнители более 1 жанра;
 SELECT album.title, COUNT(genre.name)  FROM album
 JOIN artisttoalbum ON album.album_id = artisttoalbum.album_id 
 JOIN artist ON artist.artist_id = artisttoalbum.artist_id
@@ -68,37 +68,27 @@ JOIN genre ON genre.genre_id = genretoartist.genre_id
 GROUP BY album.title
 HAVING COUNT(genre.name) > 1;
 
---наименование треков, которые не входят в сборники;
+--7) наименование треков, которые не входят в сборники;
 SELECT tracklist.song_name FROM tracklist
 LEFT JOIN compilationtotracklist ON tracklist.tracklist_id = compilationtotracklist.tracklist_id
 LEFT JOIN compilation ON compilation.compilation_id = compilationtotracklist.compilation_id 
-WHERE compilation.name IS NULL
-GROUP BY tracklist.song_name;
+WHERE compilation.name IS NULL;
 
 
---исполнителя(-ей), написавшего самый короткий по продолжительности трек (теоретически таких треков может быть несколько);
-SELECT artist.nickname, MIN(tracklist.length) FROM artist 
+--8) исполнителя(-ей), написавшего самый короткий по продолжительности трек (теоретически таких треков может быть несколько);
+SELECT artist.nickname FROM artist 
 JOIN artisttoalbum ON artist.artist_id = artisttoalbum.artist_id 
 JOIN album ON album.album_id = artisttoalbum.album_id 
-JOIN tracklist ON  album.album_id = tracklist.tracklist_id
-WHERE tracklist.length <= (SELECT AVG(tracklist.length) FROM tracklist)
-GROUP BY artist.nickname
-ORDER BY MIN(tracklist.length);
-
---название альбомов, содержащих наименьшее количество треков.
---SELECT album.title, COUNT(tracklist.song_name) FROM album
---CROSS JOIN tracklist  ON album.album_id = tracklist.tracklist_id
---GROUP BY album.title
---ORDER BY COUNT(tracklist.song_name);
-SELECT title,release_year, song_name, length FROM album
-JOIN tracklist ON album.album_id = tracklist.tracklist_id
+JOIN tracklist ON  album.album_id = tracklist.album_id
+WHERE tracklist.length = (SELECT MIN(tracklist.length) FROM tracklist);
 
 
-
-
-
-
-
-
-
-
+--9) название альбомов, содержащих наименьшее количество треков.
+SELECT album.title, COUNT(tracklist.tracklist_id) FROM album
+JOIN tracklist  ON album.album_id = tracklist.album_id
+GROUP BY album.title
+HAVING COUNT(tracklist.tracklist_id) = (SELECT COUNT(tracklist.tracklist_id) FROM album
+									JOIN tracklist  ON album.album_id = tracklist.album_id
+									GROUP BY album.title
+									ORDER BY COUNT(tracklist.tracklist_id)
+									LIMIT 1);

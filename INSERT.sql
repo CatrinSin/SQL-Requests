@@ -26,7 +26,8 @@ VALUES ('Maybe', 2001),
 ('The Slow Rush', 2020),
 ('A Night At The Opera', 1975),
 ('Voulez-Vous', 1979 ),
-('Phases', 2019);
+('Phases', 2019),
+('Все о Марте', 2016);
 
 --не менее 15 треков;
 INSERT INTO tracklist (album_id, song_name, length)
@@ -46,7 +47,8 @@ VALUES (1, 'На заре', 4.35),
 (7, 'Chiquitita', 5.25),
 (8, 'Eyes Off You', 3.24),
 (8, 'Love', 2.37)
-(3, 'Left And Right', 4.35);
+(3, 'Left And Right', 4.35),
+(9, 'О, Марфа!', 3.32);
 
 --не менее 8 сборников.
 INSERT INTO compilation (name, release_year)
